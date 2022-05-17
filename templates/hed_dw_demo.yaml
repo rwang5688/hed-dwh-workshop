@@ -1,0 +1,495 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Resources:
+  LFLabS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: TRUE
+        BlockPublicPolicy: TRUE
+        IgnorePublicAcls: TRUE
+        RestrictPublicBuckets: TRUE
+      VersioningConfiguration:
+        Status: Suspended
+
+  LFLabsS3BucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref LFLabS3Bucket
+      PolicyDocument:
+        Id: LFLabS3BucketPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowOnlySecureTransport
+            Action:
+              - s3:*
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false'
+            Effect: Deny
+            Principal: '*'
+            Resource:
+              - !Sub 'arn:aws:s3:::${LFLabS3Bucket}'
+              - !Sub 'arn:aws:s3:::${LFLabS3Bucket}/*'
+
+  LFLabS3Policy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: LFLabS3Policy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+            Resource:
+              - !Sub ${LFLabS3Bucket.Arn}/*
+          -
+            Effect: Allow
+            Action:
+              - s3:ListBucket
+            Resource:
+              - !GetAtt LFLabS3Bucket.Arn
+      Roles:
+        - !Ref GlueLabRole
+
+  GlueLabRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - glue.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /service-role/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+        - arn:aws:iam::aws:policy/AmazonKinesisFullAccess
+
+  LakeFormationWorkflowRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - glue.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        -
+          PolicyName: DatalakeDataAccess
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Sid: Lakeformation
+                Effect: Allow
+                Action:
+                  - lakeformation:GetDataAccess
+                  - lakeformation:GrantPermissions
+                Resource: "*"
+        -
+          PolicyName: DatalakePassRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Sid: PassRolePermissions
+                Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource: "*"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+        - arn:aws:iam::aws:policy/AWSGlueConsoleFullAccess
+
+  WorkgroupAS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: TRUE
+        BlockPublicPolicy: TRUE
+        IgnorePublicAcls: TRUE
+        RestrictPublicBuckets: TRUE
+      VersioningConfiguration:
+        Status: Suspended
+
+  WorkgroupAS3BucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref WorkgroupAS3Bucket
+      PolicyDocument:
+        Id: WorkgroupAS3BucketPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowOnlySecureTransport
+            Action:
+              - s3:*
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false'
+            Effect: Deny
+            Principal: '*'
+            Resource:
+              - !Sub 'arn:aws:s3:::${WorkgroupAS3Bucket}'
+              - !Sub 'arn:aws:s3:::${WorkgroupAS3Bucket}/*'
+
+  WorkgroupBS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: TRUE
+        BlockPublicPolicy: TRUE
+        IgnorePublicAcls: TRUE
+        RestrictPublicBuckets: TRUE
+      VersioningConfiguration:
+        Status: Suspended
+
+  WorkgroupBS3BucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref WorkgroupBS3Bucket
+      PolicyDocument:
+        Id: WorkgroupBS3BucketPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowOnlySecureTransport
+            Action:
+              - s3:*
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false'
+            Effect: Deny
+            Principal: '*'
+            Resource:
+              - !Sub 'arn:aws:s3:::${WorkgroupBS3Bucket}'
+              - !Sub 'arn:aws:s3:::${WorkgroupBS3Bucket}/*'
+
+  BusinessAnalystUserPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Policy for providing required access to the business analyst user
+      Path: /
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Action: athena:ListWorkGroups
+            Resource: "*"
+          -
+            Effect: Allow
+            Action:
+              - s3:ListBucketMultipartUploads
+              - athena:StartQueryExecution
+              - athena:GetQueryResultsStream
+              - athena:GetQueryResults
+              - s3:CreateBucket
+              - s3:ListBucket
+              - athena:DeleteNamedQuery
+              - athena:GetNamedQuery
+              - athena:ListTagsForResource
+              - athena:ListQueryExecutions
+              - s3:ListMultipartUploadParts
+              - athena:ListNamedQueries
+              - s3:PutObject
+              - s3:GetObject
+              - s3:GetObjectAcl
+              - athena:GetWorkGroup
+              - athena:CreateNamedQuery
+              - s3:AbortMultipartUpload
+              - athena:StopQueryExecution
+              - athena:GetQueryExecution
+              - athena:BatchGetNamedQuery
+              - s3:GetBucketLocation
+              - athena:BatchGetQueryExecution
+            Resource:
+              - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}/*
+              - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}
+              - !Sub arn:aws:s3:::${LFLabS3Bucket}
+              - !Sub arn:aws:s3:::${LFLabS3Bucket}/*
+              - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupA
+          -
+            Effect: Allow
+            Action: athena:GetQueryExecutions
+            Resource: !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupA
+          -
+            Effect: Allow
+            Action:
+              - glue:Get*
+              - glue:GetTable
+            Resource:
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog/awsdatacatalog
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/ticketdata
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/ticketdata/parquet_sporting_event
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/ticketdata/parquet_sport_team
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/ticketdata/parquet_sport_location
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/ticketdata/sporting_event_info
+
+  WorkgroupManagerUserPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Policy for providing only manager access to workgroup manager user for WorkgroupA and WorkgroupB
+      Path: /
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Action:
+              - athena:ListWorkGroups
+            Resource: "*"
+          -
+            Effect: Allow
+            Action:
+              - s3:ListBucketMultipartUploads
+              - s3:CreateBucket
+              - s3:ListBucket
+              - s3:ListMultipartUploadParts
+              - s3:PutObject
+              - s3:GetObject
+              - s3:GetObjectAcl
+              - s3:GetBucketLocation
+            Resource:
+              - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}
+              - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}/*
+              - !Sub arn:aws:s3:::${WorkgroupBS3Bucket}
+              - !Sub arn:aws:s3:::${WorkgroupBS3Bucket}/*
+              - !Sub arn:aws:s3:::${LFLabS3Bucket}
+              - !Sub arn:aws:s3:::${LFLabS3Bucket}/*
+              - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupA
+              - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupB
+          -
+            Effect: Allow
+            Action:
+              - athena:DeleteWorkGroup
+              - athena:UpdateWorkGroup
+              - athena:GetWorkGroup
+              - athena:CreateWorkGroup
+              - athena:GetExecutionEngine
+              - athena:GetExecutionEngines
+              - athena:GetNamespace
+              - athena:GetCatalogs
+              - athena:GetNamespaces
+              - athena:GetTables
+              - athena:GetTable
+            Resource:
+              - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupA
+              - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupB
+
+  BusinessAnalystUser:
+    Type: AWS::IAM::User
+    Properties:
+      ManagedPolicyArns:
+        - !Ref BusinessAnalystUserPolicy
+      LoginProfile:
+        Password: Admin123!
+
+  WorkgroupManagerUser:
+    Type: AWS::IAM::User
+    Properties:
+      ManagedPolicyArns:
+        - !Ref WorkgroupManagerUserPolicy
+      LoginProfile:
+        Password: Admin123!
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      Policies:
+        - PolicyName: LambdaRolePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:DeleteObject
+                Resource:
+                  - !Sub arn:aws:s3:::${LFLabS3Bucket}/*
+                  - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}/*
+                  - !Sub arn:aws:s3:::${WorkgroupBS3Bucket}/*
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${LFLabS3Bucket}
+                  - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}
+                  - !Sub arn:aws:s3:::${WorkgroupBS3Bucket}
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
+
+  S3BucketHandler:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaRole.Arn
+      Code:
+        ZipFile: |
+          import os
+          import json
+          import cfnresponse
+          import boto3
+          from botocore.exceptions import ClientError
+
+          s3 = boto3.resource('s3')
+
+          def handler(event, context):
+              print("Received event: %s" % json.dumps(event))
+              s3_bucket = s3.Bucket(event['ResourceProperties']['Bucket'])
+
+              try:
+                  if event['RequestType'] == 'Create' or event['RequestType'] == 'Update':
+                      result = cfnresponse.SUCCESS
+                  elif event['RequestType'] == 'Delete':
+                      s3_bucket.objects.delete()
+                      result = cfnresponse.SUCCESS
+              except ClientError as e:
+                  print('Error: %s', e)
+                  result = cfnresponse.FAILED
+
+              cfnresponse.send(event, context, result, {})
+
+      Runtime: python3.8
+      Timeout: 300
+
+  SisDemoDataHandler:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaRole.Arn
+      Code:
+        ZipFile: |
+          var AWS = require('aws-sdk');
+          var s3 = new AWS.S3();
+
+          exports.handler = (event) => {
+
+              var listParams = {
+                  Bucket: "ee-assets-prod-us-west-2",
+                  Prefix: "modules/7009d8e656004426b1ea6f27f0487d56/v1/sisdemo/"
+              };
+
+              s3.listObjectsV2(listParams, function(err, data) {
+                  if (err) console.log(err, err.stack); // an error occurred
+                  else {
+                      if (data.Contents.length) {
+                          data.Contents.forEach(file => {
+                              console.log(file);
+                              var copyParams = {
+                                  Bucket: process.env.BUCKET,
+                                  CopySource: "ee-assets-prod-us-west-2" + '/' + file.Key,
+                                  Key: file.Key.replace("modules/7009d8e656004426b1ea6f27f0487d56/v1/sisdemo/", "sisdemo/")
+                              };
+                              console.log(copyParams);
+                              s3.copyObject(copyParams, function(copyErr, copyData) {
+                                  if (copyErr) {
+                                      console.log(copyErr);
+                                  }
+                                  else {
+                                      console.log('Copied: ', copyParams.Key);
+                                  }
+                              });
+                          });
+                      }
+                  }
+              });
+          };
+          
+      Environment: 
+        Variables:
+          BUCKET: !Ref LFLabS3Bucket
+      Runtime: nodejs14.x
+      Timeout: 300
+
+  EmptyLFLabS3Bucket:
+    Type: "Custom::EmptyS3Bucket"
+    Properties:
+      ServiceToken: !GetAtt S3BucketHandler.Arn
+      Bucket: !Ref LFLabS3Bucket
+
+  EmptyWorkgroupAS3Bucket:
+    Type: "Custom::EmptyS3Bucket"
+    Properties:
+      ServiceToken: !GetAtt S3BucketHandler.Arn
+      Bucket: !Ref WorkgroupAS3Bucket
+
+  EmptyWorkgroupBS3Bucket:
+    Type: "Custom::EmptyS3Bucket"
+    Properties:
+      ServiceToken: !GetAtt S3BucketHandler.Arn
+      Bucket: !Ref WorkgroupBS3Bucket
+
+Outputs:
+  GlueLabRole:
+    Description: The Glue service role
+    Value: !Ref GlueLabRole
+
+  LakeFormationRole:
+    Description: Lake Formation IAM role
+    Value: !Ref LakeFormationWorkflowRole
+
+  LFLabS3Bucket:
+    Description: S3 Bucket that was created
+    Value: !Ref LFLabS3Bucket
+
+  WorkgroupAS3Bucket:
+    Description: S3 Bucket for storing workgroup A results
+    Value: !Ref WorkgroupAS3Bucket
+
+  WorkgroupBS3Bucket:
+    Description: S3 bucket for storing workgroup B results
+    Value: !Ref WorkgroupBS3Bucket
+
+  BusinessAnalystUser:
+    Description: business_analyst_user for Workgroup A
+    Value: !Ref BusinessAnalystUser
+
+  WorkgroupManagerUser:
+    Description: workgroup_manager_user for access to Workgroup A and Workgroup B
+    Value: !Ref WorkgroupManagerUser
