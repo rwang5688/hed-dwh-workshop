@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 
 Resources:
-  LFLabS3Bucket:
+  HEDDWDemoS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: Private
@@ -17,12 +17,12 @@ Resources:
       VersioningConfiguration:
         Status: Suspended
 
-  LFLabsS3BucketPolicy:
+  HEDDWDemoS3BucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
     Properties:
-      Bucket: !Ref LFLabS3Bucket
+      Bucket: !Ref HEDDWDemoS3Bucket
       PolicyDocument:
-        Id: LFLabS3BucketPolicy
+        Id: HEDDWDemoS3BucketPolicy
         Version: 2012-10-17
         Statement:
           - Sid: AllowOnlySecureTransport
@@ -34,13 +34,13 @@ Resources:
             Effect: Deny
             Principal: '*'
             Resource:
-              - !Sub 'arn:aws:s3:::${LFLabS3Bucket}'
-              - !Sub 'arn:aws:s3:::${LFLabS3Bucket}/*'
+              - !Sub 'arn:aws:s3:::${HEDDWDemoS3Bucket}'
+              - !Sub 'arn:aws:s3:::${HEDDWDemoS3Bucket}/*'
 
-  LFLabS3Policy:
+  HEDDWDemoS3Policy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: LFLabS3Policy
+      PolicyName: HEDDWDemoS3Policy
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -51,13 +51,13 @@ Resources:
               - s3:PutObject
               - s3:DeleteObject
             Resource:
-              - !Sub ${LFLabS3Bucket.Arn}/*
+              - !Sub ${HEDDWDemoS3Bucket.Arn}/*
           -
             Effect: Allow
             Action:
               - s3:ListBucket
             Resource:
-              - !GetAtt LFLabS3Bucket.Arn
+              - !GetAtt HEDDWDemoS3Bucket.Arn
       Roles:
         - !Ref GlueLabRole
 
@@ -234,8 +234,8 @@ Resources:
             Resource:
               - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}/*
               - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}
-              - !Sub arn:aws:s3:::${LFLabS3Bucket}
-              - !Sub arn:aws:s3:::${LFLabS3Bucket}/*
+              - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}
+              - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}/*
               - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupA
           -
             Effect: Allow
@@ -284,8 +284,8 @@ Resources:
               - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}/*
               - !Sub arn:aws:s3:::${WorkgroupBS3Bucket}
               - !Sub arn:aws:s3:::${WorkgroupBS3Bucket}/*
-              - !Sub arn:aws:s3:::${LFLabS3Bucket}
-              - !Sub arn:aws:s3:::${LFLabS3Bucket}/*
+              - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}
+              - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}/*
               - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupA
               - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupB
           -
@@ -346,13 +346,13 @@ Resources:
               - Effect: Allow
                 Action: s3:DeleteObject
                 Resource:
-                  - !Sub arn:aws:s3:::${LFLabS3Bucket}/*
+                  - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}/*
                   - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}/*
                   - !Sub arn:aws:s3:::${WorkgroupBS3Bucket}/*
               - Effect: Allow
                 Action: s3:ListBucket
                 Resource:
-                  - !Sub arn:aws:s3:::${LFLabS3Bucket}
+                  - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}
                   - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}
                   - !Sub arn:aws:s3:::${WorkgroupBS3Bucket}
               - Effect: Allow
@@ -397,6 +397,24 @@ Resources:
 
       Runtime: python3.8
       Timeout: 300
+
+  EmptyHEDDWDemoS3Bucket:
+    Type: "Custom::EmptyS3Bucket"
+    Properties:
+      ServiceToken: !GetAtt S3BucketHandler.Arn
+      Bucket: !Ref HEDDWDemoS3Bucket
+
+  EmptyWorkgroupAS3Bucket:
+    Type: "Custom::EmptyS3Bucket"
+    Properties:
+      ServiceToken: !GetAtt S3BucketHandler.Arn
+      Bucket: !Ref WorkgroupAS3Bucket
+
+  EmptyWorkgroupBS3Bucket:
+    Type: "Custom::EmptyS3Bucket"
+    Properties:
+      ServiceToken: !GetAtt S3BucketHandler.Arn
+      Bucket: !Ref WorkgroupBS3Bucket
 
   SisDemoDataHandler:
     Type: AWS::Lambda::Function
@@ -443,27 +461,220 @@ Resources:
           
       Environment: 
         Variables:
-          BUCKET: !Ref LFLabS3Bucket
+          BUCKET: !Ref HEDDWDemoS3Bucket
       Runtime: nodejs14.x
       Timeout: 300
 
-  EmptyLFLabS3Bucket:
-    Type: "Custom::EmptyS3Bucket"
+  dataeduSSMParam6F974C31:
+    Type: 'AWS::SSM::Parameter'
     Properties:
-      ServiceToken: !GetAtt S3BucketHandler.Arn
-      Bucket: !Ref LFLabS3Bucket
+      Type: String
+      Value:
+        'Fn::Join':
+          - ''
+          - - '{"base_url":"ee-assets-prod-'
+            - Ref: 'AWS::Region'
+            - >-
+              .s3.amazonaws.com/modules/cfdd4f678e99415a9c1f11342a3a9887/v1/mockdata/lms_demo","version":
+              "v1", "current_date": "2020-08-17", "perform_initial_load":
+              "1","target_bucket":"
+            - Ref: HEDDWDemoS3Bucket
+            - '", "base_s3_prefix":"lmsapi"}'
+      Description: SSM Parameter for mock LMS integration.
+      Name: /dataedu/lms-demo/state
 
-  EmptyWorkgroupAS3Bucket:
-    Type: "Custom::EmptyS3Bucket"
+  dataeduLMSS3FetchRole16948341:
+    Type: 'AWS::IAM::Role'
     Properties:
-      ServiceToken: !GetAtt S3BucketHandler.Arn
-      Bucket: !Ref WorkgroupAS3Bucket
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: '2012-10-17'
+      RoleName: dataedu-fetch-s3-lambda-role
 
-  EmptyWorkgroupBS3Bucket:
-    Type: "Custom::EmptyS3Bucket"
+  dataeduLMSS3FetchRoleDefaultPolicyE0083EF5:
+    Type: 'AWS::IAM::Policy'
     Properties:
-      ServiceToken: !GetAtt S3BucketHandler.Arn
-      Bucket: !Ref WorkgroupBS3Bucket
+      PolicyDocument:
+        Statement:
+          - Action: 's3:ListBucket'
+            Effect: Allow
+            Resource:
+              'Fn::GetAtt':
+                - HEDDWDemoS3Bucket
+                - Arn
+          - Action:
+              - 's3:GetObject'
+              - 's3:PutObject'
+              - 's3:DeleteObject'
+            Effect: Allow
+            Resource:
+              'Fn::Join':
+                - ''
+                - - 'Fn::GetAtt':
+                      - HEDDWDemoS3Bucket
+                      - Arn
+                  - /*
+          - Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Effect: Allow
+            Resource: '*'
+        Version: '2012-10-17'
+      PolicyName: dataeduLMSS3FetchRoleDefaultPolicyE0083EF5
+      Roles:
+        - Ref: dataeduLMSS3FetchRole16948341
+
+  dataeduLMSS3FetchLambdaB561DBA8:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket:
+          'Fn::Join':
+            - ''
+            - - ee-assets-prod-
+              - Ref: 'AWS::Region'
+        S3Key: >-
+          modules/cfdd4f678e99415a9c1f11342a3a9887/v1/lambda/dataedu-fetch-s3-data.zip
+      Role:
+        'Fn::GetAtt':
+          - dataeduLMSS3FetchRole16948341
+          - Arn
+      Description: >-
+        Lambda function that fetches a file from a URL and stores it in a S3
+        bucket
+      FunctionName: dataedu-fetch-s3-data
+      Handler: lambda_handler.lambda_handler
+      MemorySize: 256
+      Runtime: python3.7
+      Timeout: 600
+    DependsOn:
+      - dataeduLMSS3FetchRoleDefaultPolicyE0083EF5
+      - dataeduLMSS3FetchRole16948341
+
+  dataeduLMSAPIFetchRoleE153F61C:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: '2012-10-17'
+      RoleName: dataedu-fetch-s3-data-role
+
+  dataeduLMSAPIFetchRoleDefaultPolicy716C3933:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - 'ssm:PutParameter'
+              - 'ssm:GetParameter'
+            Effect: Allow
+            Resource:
+              'Fn::Join':
+                - ''
+                - - 'arn:'
+                  - Ref: 'AWS::Partition'
+                  - ':ssm:'
+                  - Ref: 'AWS::Region'
+                  - ':'
+                  - Ref: 'AWS::AccountId'
+                  - ':parameter'
+                  - Ref: dataeduSSMParam6F974C31
+          - Action:
+              - 'lambda:InvokeFunction'
+              - 'lambda:InvokeAsync'
+            Effect: Allow
+            Resource:
+              'Fn::Join':
+                - ''
+                - - 'arn:aws:lambda:'
+                  - Ref: 'AWS::Region'
+                  - ':'
+                  - Ref: 'AWS::AccountId'
+                  - ':function:dataedu-*'
+          - Action: 'events:DisableRule'
+            Effect: Allow
+            Resource:
+              'Fn::Join':
+                - ''
+                - - 'arn:aws:events:'
+                  - Ref: 'AWS::Region'
+                  - ':'
+                  - Ref: 'AWS::AccountId'
+                  - ':rule/dataedu-lmsapi-sync'
+          - Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Effect: Allow
+            Resource: '*'
+        Version: '2012-10-17'
+      PolicyName: dataeduLMSAPIFetchRoleDefaultPolicy716C3933
+      Roles:
+        - Ref: dataeduLMSAPIFetchRoleE153F61C
+
+  dataeduLMSAPIFetchLambdaBD421AD7:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket:
+          'Fn::Join':
+            - ''
+            - - ee-assets-prod-
+              - Ref: 'AWS::Region'
+        S3Key: >-
+          modules/cfdd4f678e99415a9c1f11342a3a9887/v1/lambda/dataedu-fetch-lmsapi.zip
+      Role:
+        'Fn::GetAtt':
+          - dataeduLMSAPIFetchRoleE153F61C
+          - Arn
+      Description: >-
+        Lambda function that mimics invoking an API to obtain data from a SaaS
+        app
+      FunctionName: dataedu-fetch-lmsapi
+      Handler: lambda_function.lambda_handler
+      MemorySize: 256
+      Runtime: python3.7
+      Timeout: 600
+    DependsOn:
+      - dataeduLMSAPIFetchRoleDefaultPolicy716C3933
+      - dataeduLMSAPIFetchRoleE153F61C
+
+  dataeduEventBridgeRuleF5498C76:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Description: Invokes demo API on a scheduled basis
+      Name: dataedu-lmsapi-sync
+      ScheduleExpression: rate(1 minute)
+      State: DISABLED
+      Targets:
+        - Arn:
+            'Fn::GetAtt':
+              - dataeduLMSAPIFetchLambdaBD421AD7
+              - Arn
+          Id: Target0
+
+  dataeduEventBridgeRuleAllowEventRuledataEDUstackEEdataeduLMSAPIFetchLambda7A54F1DB5834D1AF:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName:
+        'Fn::GetAtt':
+          - dataeduLMSAPIFetchLambdaBD421AD7
+          - Arn
+      Principal: events.amazonaws.com
+      SourceArn:
+        'Fn::GetAtt':
+          - dataeduEventBridgeRuleF5498C76
+          - Arn
 
 Outputs:
   GlueLabRole:
@@ -474,9 +685,9 @@ Outputs:
     Description: Lake Formation IAM role
     Value: !Ref LakeFormationWorkflowRole
 
-  LFLabS3Bucket:
+  HEDDWDemoS3Bucket:
     Description: S3 Bucket that was created
-    Value: !Ref LFLabS3Bucket
+    Value: !Ref HEDDWDemoS3Bucket
 
   WorkgroupAS3Bucket:
     Description: S3 Bucket for storing workgroup A results
