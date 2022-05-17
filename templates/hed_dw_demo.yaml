@@ -429,7 +429,7 @@ Resources:
           exports.handler = (event) => {
 
               var listParams = {
-                  Bucket: "ee-assets-prod-us-west-2",
+                  Bucket: "ee-assets-prod-us-east-1",
                   Prefix: "modules/7009d8e656004426b1ea6f27f0487d56/v1/sisdemo/"
               };
 
@@ -441,7 +441,7 @@ Resources:
                               console.log(file);
                               var copyParams = {
                                   Bucket: process.env.BUCKET,
-                                  CopySource: "ee-assets-prod-us-west-2" + '/' + file.Key,
+                                  CopySource: "ee-assets-prod-us-east-1" + '/' + file.Key,
                                   Key: file.Key.replace("modules/7009d8e656004426b1ea6f27f0487d56/v1/sisdemo/", "sisdemo/")
                               };
                               console.log(copyParams);
@@ -675,6 +675,47 @@ Resources:
         'Fn::GetAtt':
           - dataeduEventBridgeRuleF5498C76
           - Arn
+
+  RedshiftSpectrumRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - redshift.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        -
+          PolicyName: RedshiftPolicyForLF
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              -
+                Sid: Lakeformation
+                Effect: Allow
+                Action:
+                  - glue:*
+                  - lakeformation:GetDataAccess
+                Resource: "*"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - arn:aws:iam::aws:policy/AWSGlueConsoleFullAccess
+
+  RedshiftCluster: 
+    Type: "AWS::Redshift::Cluster"
+    Properties:
+      DBName: "ra3db"
+      IamRoles:
+        - !GetAtt RedshiftSpectrumRole.Arn
+      MasterUsername: "ra3admin"
+      MasterUserPassword: "iamRa3admin1!"
+      NodeType: "ra3.xlplus"
+      ClusterType: "single-node"
 
 Outputs:
   GlueLabRole:
