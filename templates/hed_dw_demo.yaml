@@ -27,6 +27,7 @@ Parameters:
     Type: String
     Default: ra3.xlplus
     AllowedValues:
+    - ds2.xlarge
     - ra3.xlplus
     - ra3.4xlarge
     - ra3.16xlarge
