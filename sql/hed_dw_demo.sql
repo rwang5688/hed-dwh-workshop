@@ -47,7 +47,7 @@ building the configuration during the demo.
 /*
 --Step 1 - Select some data from the local data warehouse tables
 */
-SELECT * FROM sis.course;
+SELECT COUNT(*) from sis.course_registration;
 
 /*
 --Step 2 - Create external schema to connect to the data lake
@@ -63,22 +63,22 @@ FROM
 /*
 --Step 3 - Query data from the data lake
 */
-SELECT COUNT(*) from lmsraw.submission;
+SELECT COUNT(*) from lmsraw.requests;
 
 /*
 --Step 4 - Executing a query combining data lake and data warehouse tables
 */
 SELECT
-    TO_DATE(assignment.all_day_date, 'YYYY-MM-DD') due_date,
-    TO_DATE(submission.submitted_at, 'YYYY-MM-DD') submitted_date,
+    TO_DATE(assignment_fact.process_date, 'YYYY-MM-DD') due_date,
+    TO_DATE(submission_fact.process_date, 'YYYY-MM-DD') submitted_date,
     DATEDIFF( day, due_date, submitted_date) relative_submit_date,
     *
 FROM
-    lmsraw.submission
+    lmsraw.submission_fact
     JOIN sis.student
-        ON submission.user_id = student.student_id
-    JOIN lmsraw.assignment
-        ON submission.assignment_id = assignment.assignment_id;
+        ON submission_fact.user_id = student.student_id
+    JOIN lmsraw.assignment_fact
+        ON submission_fact.assignment_id = assignment_fact.assignment_id;
 
 /*
 --Step 5 - Create a new schema to abstract the data warehouse / data lake boundary for analysts
@@ -91,31 +91,31 @@ CREATE SCHEMA sis_lms;
 CREATE OR REPLACE VIEW sis_lms.submit_date_view
 AS
 SELECT
-    TO_DATE(assignment.all_day_date, 'YYYY-MM-DD') due_date,
-    TO_DATE(submission.submitted_at, 'YYYY-MM-DD') submitted_date,
+    TO_DATE(assignment_fact.process_date, 'YYYY-MM-DD') due_date,
+    TO_DATE(submission_fact.process_date, 'YYYY-MM-DD') submitted_date,
     DATEDIFF( day, due_date, submitted_date) relative_submit_date,
-    CAST(EXTRACT (YEAR from TO_DATE(submission.submitted_at, 'YYYY-MM-DD')) AS INTEGER) submit_year,
-    submission.assignment_id,
-    submission.course_id,
-    submission.user_id student_id,
-    submission.score,
+    CAST(EXTRACT (YEAR from TO_DATE(submission_fact.process_date, 'YYYY-MM-DD')) AS INTEGER) submit_year,
+    submission_fact.assignment_id,
+    submission_fact.course_id,
+    submission_fact.user_id student_id,
+    submission_fact.score,
     student.gender,
     student.parent_highest_ed,
     student.high_school_gpa,
     student.department_id,
     student.admit_semester_id
 FROM
-    lmsraw.submission
+    lmsraw.submission_fact
     JOIN sis.student
-        ON submission.user_id = student.student_id
-    JOIN lmsraw.assignment
-        ON submission.assignment_id = assignment.assignment_id
+        ON submission_fact.user_id = student.student_id
+    JOIN lmsraw.assignment_fact
+        ON submission_fact.assignment_id = assignment_fact.assignment_id
     JOIN sis.semester
         ON student.admit_semester_id = semester_id
 WITH NO SCHEMA BINDING;
 
 /*
---Step 7 - Confirm that the new views are working
+--Step 7 - Confirm that the new view is working
 */
 SELECT * from sis_lms.submit_date_view;
 SELECT COUNT(*) from sis_lms.submit_date_view;
@@ -123,7 +123,7 @@ SELECT COUNT(*) from sis_lms.submit_date_view;
 /*
 -- Step 8 - Create view of request table to support heat map
 */
-CREATE VIEW sis_lms.request_info
+CREATE VIEW sis_lms.request_info_view
 AS SELECT
     id,
     EXTRACT(dayofweek FROM TO_DATE(LEFT("timestamp",10), 'YYYY-MM-DD')) dayofweek_num,
@@ -137,8 +137,15 @@ AS SELECT
     session_id,
     url
 FROM
-    lmsraw.request
+    lmsraw.requests
 WITH NO SCHEMA BINDING;
+
+/*
+--Step 9 - Confirm that the new view is working
+*/
+SELECT * from sis_lms.request_info_view;
+SELECT COUNT(*) from sis_lms.request_info_view;
+
 /*
 ============================================================================================
 ============================================================================================
