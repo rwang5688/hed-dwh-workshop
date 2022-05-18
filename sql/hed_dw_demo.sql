@@ -10,12 +10,13 @@ here for completenss.
 -- Ensure that the right Database (dwh) is selected as context (above)
 -- Run the following steps to create the base SIS data directly stored in Redshift
 */
-DROP SCHEMA PUCREATE SCHEMA sis;
+CREATE EXTERNAL SCHEMA sisraw 
+FROM
+    data catalog
+    database 'db_raw_sisdemo' region 'us-east-1'
+    iam_role 'arn:aws:iam::${AWS::AccountId}:role/RedshiftSpectrumRole';
 
-create external schema sisraw from data catalog 
-database 'db_raw_sisdemo' region 'us-east-1' 
-iam_role 'arn:aws:iam::${AWS::AccountId}:role/RedshiftSpectrumRole';
-
+CREATE SCHEMA sis;
 CREATE TABLE sis.course AS SELECT * FROM sisraw.course;
 CREATE TABLE sis.course_outcome AS SELECT * FROM sisraw.course_outcome;
 CREATE TABLE sis.course_registration  AS SELECT * FROM sisraw.course_registration;
@@ -53,10 +54,10 @@ SELECT * FROM sis.course;
 --         Three tables (assignment, submission and request should be available in the 
 --	   external schema
 */
-CREATE EXTERNAL SCHEMA lmsraw 
-FROM 
-    data catalog 
-    database 'db_raw_lmsdemo' region 'us-east-1' 
+CREATE EXTERNAL SCHEMA lmsraw
+FROM
+    data catalog
+    database 'db_raw_lmsdemo' region 'us-east-1'
     iam_role 'arn:aws:iam::${AWS::AccountId}:role/RedshiftSpectrumRole';
 
 /*
@@ -67,15 +68,15 @@ SELECT COUNT(*) from lmsraw.submission;
 /*
 --Step 4 - Executing a query combining data lake and data warehouse tables
 */
-SELECT 
+SELECT
     TO_DATE(assignment.all_day_date, 'YYYY-MM-DD') due_date,
     TO_DATE(submission.submitted_at, 'YYYY-MM-DD') submitted_date,
     DATEDIFF( day, due_date, submitted_date) relative_submit_date,
     *
-FROM 
-    lmsraw.submission 
-    JOIN sis.student 
-        ON submission.user_id = student.student_id 
+FROM
+    lmsraw.submission
+    JOIN sis.student
+        ON submission.user_id = student.student_id
     JOIN lmsraw.assignment
         ON submission.assignment_id = assignment.assignment_id;
 
@@ -89,7 +90,7 @@ CREATE SCHEMA sis_lms;
 */
 CREATE OR REPLACE VIEW sis_lms.submit_date_view
 AS
-SELECT 
+SELECT
     TO_DATE(assignment.all_day_date, 'YYYY-MM-DD') due_date,
     TO_DATE(submission.submitted_at, 'YYYY-MM-DD') submitted_date,
     DATEDIFF( day, due_date, submitted_date) relative_submit_date,
@@ -103,13 +104,13 @@ SELECT
     student.high_school_gpa,
     student.department_id,
     student.admit_semester_id
-FROM 
-    lmsraw.submission 
-    JOIN sis.student 
-        ON submission.user_id = student.student_id 
+FROM
+    lmsraw.submission
+    JOIN sis.student
+        ON submission.user_id = student.student_id
     JOIN lmsraw.assignment
         ON submission.assignment_id = assignment.assignment_id
-    JOIN sis.semester 
+    JOIN sis.semester
         ON student.admit_semester_id = semester_id
 WITH NO SCHEMA BINDING;
 
@@ -135,7 +136,7 @@ AS SELECT
     http_method,
     session_id,
     url
-FROM 
+FROM
     lmsraw.request
 WITH NO SCHEMA BINDING;
 /*
