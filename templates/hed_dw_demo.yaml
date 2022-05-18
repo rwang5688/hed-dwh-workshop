@@ -775,30 +775,34 @@ Resources:
     Type: AWS::Redshift::Cluster
     DependsOn: AttachGateway
     Properties:
+      ClusterParameterGroupName:
+        Ref: RedshiftClusterParameterGroup
+      ClusterSubnetGroupName:
+        Ref: RedshiftClusterSubnetGroup
       ClusterType:
         Ref: ClusterType
+      DBName:
+        Ref: DatabaseName
+      IamRoles:
+        - 'Fn::GetAtt':
+          - RedshiftSpectrumRole
+          - Arn
+      MasterUsername:
+        Ref: MasterUsername
+      MasterUserPassword:
+        Ref: MasterUserPassword
+      NodeType:
+        Ref: NodeType
       NumberOfNodes:
         Fn::If:
         - IsMultiNodeCluster
         - Ref: NumberOfNodes
         - Ref: AWS::NoValue
-      NodeType:
-        Ref: NodeType
-      DBName:
-        Ref: DatabaseName
-      MasterUsername:
-        Ref: MasterUsername
-      MasterUserPassword:
-        Ref: MasterUserPassword
-      ClusterParameterGroupName:
-        Ref: RedshiftClusterParameterGroup
-      VpcSecurityGroupIds:
-      - Ref: SecurityGroup
-      ClusterSubnetGroupName:
-        Ref: RedshiftClusterSubnetGroup
-      PubliclyAccessible: 'true'
       Port:
         Ref: PortNumber
+      PubliclyAccessible: 'true'
+      VpcSecurityGroupIds:
+      - Ref: SecurityGroup
 
   RedshiftClusterParameterGroup:
     Type: AWS::Redshift::ClusterParameterGroup
@@ -878,7 +882,6 @@ Resources:
       RouteTableId:
         Ref: PublicRouteTable
         
-Outputs:
 Outputs:
   GlueLabRole:
     Description: The Glue service role
