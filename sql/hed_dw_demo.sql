@@ -14,7 +14,7 @@ CREATE EXTERNAL SCHEMA sisraw
 FROM
     data catalog
     database 'db_raw_sisdemo' region 'us-east-1'
-    iam_role 'arn:aws:iam::${AWS::AccountId}:role/RedshiftSpectrumRole';
+    iam_role '${RedshiftSpectrumRoleArn}';
 
 CREATE SCHEMA sis;
 CREATE TABLE sis.course AS SELECT * FROM sisraw.course;
@@ -58,7 +58,7 @@ CREATE EXTERNAL SCHEMA lmsraw
 FROM
     data catalog
     database 'db_raw_lmsdemo' region 'us-east-1'
-    iam_role 'arn:aws:iam::${AWS::AccountId}:role/RedshiftSpectrumRole';
+    iam_role '${RedshiftSpectrumRoleArn}';
 
 /*
 --Step 3 - Query data from the data lake
