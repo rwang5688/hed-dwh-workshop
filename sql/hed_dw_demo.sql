@@ -13,7 +13,7 @@ here for completenss.
 CREATE EXTERNAL SCHEMA sisraw 
 FROM
     data catalog
-    database 'db_raw_sisdemo' region 'us-east-1'
+    database 'db_raw_sisdemo' region '${AWS::Region}'
     iam_role '${RedshiftSpectrumRoleArn}';
 
 CREATE SCHEMA sis;
@@ -57,7 +57,7 @@ SELECT COUNT(*) from sis.course_registration;
 CREATE EXTERNAL SCHEMA lmsraw
 FROM
     data catalog
-    database 'db_raw_lmsdemo' region 'us-east-1'
+    database 'db_raw_lmsdemo' region '${AWS::Region}'
     iam_role '${RedshiftSpectrumRoleArn}';
 
 /*
