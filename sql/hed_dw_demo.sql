@@ -45,13 +45,8 @@ building the configuration during the demo.
 ============================================================================================
 */
 /*
---Step 1 - Select some data from the local data warehouse tables
-*/
-SELECT COUNT(*) from sis.course_registration;
-
-/*
---Step 2 - Create external schema to connect to the data lake
---         Three tables (assignment, submission and request should be available in the 
+--Step 1 - Create external schema to connect to the data lake
+--     Three tables (assignment, submission and request should be available in the 
 --	   external schema
 */
 CREATE EXTERNAL SCHEMA lmsraw
@@ -59,6 +54,11 @@ FROM
     data catalog
     database 'db_raw_lmsdemo' region '${AWS::Region}'
     iam_role '${RedshiftSpectrumRoleArn}';
+
+/*
+--Step 2 - Select some data from the local data warehouse tables
+*/
+SELECT COUNT(*) from sis.course_registration;
 
 /*
 --Step 3 - Query data from the data lake
