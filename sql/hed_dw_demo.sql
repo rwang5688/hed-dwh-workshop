@@ -46,8 +46,8 @@ building the configuration during the demo.
 */
 /*
 --Step 1 - Create external schema to connect to the data lake
---     Three tables (assignment, submission and request should be available in the 
---	   external schema
+-- Three tables (assignment_fact, submission_fact and requests)
+-- should be available in the external schema.
 */
 CREATE EXTERNAL SCHEMA lmsraw
 FROM
