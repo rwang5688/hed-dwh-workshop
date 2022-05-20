@@ -69,16 +69,16 @@ SELECT COUNT(*) from lmsraw.requests;
 --Step 4 - Executing a query combining data lake and data warehouse tables
 */
 SELECT
-    TO_DATE(assignment_fact.process_date, 'YYYY-MM-DD') due_date,
-    TO_DATE(submission_fact.process_date, 'YYYY-MM-DD') submitted_date,
+    TO_DATE(assignment_dim.all_day_date, 'YYYY-MM-DD') due_date,
+    TO_DATE(submission_dim.submitted_at, 'YYYY-MM-DD') submitted_date,
     DATEDIFF( day, due_date, submitted_date) relative_submit_date,
     *
 FROM
-    lmsraw.submission_fact
+    lmsraw.submission_dim
     JOIN sis.student
-        ON submission_fact.user_id = student.student_id
-    JOIN lmsraw.assignment_fact
-        ON submission_fact.assignment_id = assignment_fact.assignment_id;
+        ON submission_dim.user_id = student.student_id
+    JOIN lmsraw.assignment_dim
+        ON submission_dim.assignment_id = assignment_dim.assignment_id;
 
 /*
 --Step 5 - Create a new schema to abstract the data warehouse / data lake boundary for analysts
@@ -91,25 +91,28 @@ CREATE SCHEMA sis_lms;
 CREATE OR REPLACE VIEW sis_lms.submit_date_view
 AS
 SELECT
-    TO_DATE(assignment_fact.process_date, 'YYYY-MM-DD') due_date,
-    TO_DATE(submission_fact.process_date, 'YYYY-MM-DD') submitted_date,
+    TO_DATE(assignment_dim.all_day_date, 'YYYY-MM-DD') due_date,
+    TO_DATE(submission_dim.submitted_at, 'YYYY-MM-DD') submitted_date,
     DATEDIFF( day, due_date, submitted_date) relative_submit_date,
-    CAST(EXTRACT (YEAR from TO_DATE(submission_fact.process_date, 'YYYY-MM-DD')) AS INTEGER) submit_year,
-    submission_fact.assignment_id,
-    submission_fact.course_id,
-    submission_fact.user_id student_id,
+    CAST(EXTRACT (YEAR from TO_DATE(submission_dim.submitted_at, 'YYYY-MM-DD')) AS INTEGER) submit_year,
+    submission_dim.assignment_id,
+    submission_dim.user_id,
+	submission_fact.course_id,
     submission_fact.score,
+    student.student_id,
     student.gender,
     student.parent_highest_ed,
     student.high_school_gpa,
     student.department_id,
     student.admit_semester_id
 FROM
-    lmsraw.submission_fact
-    JOIN sis.student
-        ON submission_fact.user_id = student.student_id
-    JOIN lmsraw.assignment_fact
-        ON submission_fact.assignment_id = assignment_fact.assignment_id
+    lmsraw.submission_dim
+    JOIN lmsraw.submission_fact
+    	ON submission_dim.id = submission_fact.submission_id
+    JOIN lmsraw.assignment_dim
+        ON submission_dim.assignment_id = assignment_dim.assignment_id
+	JOIN sis.student
+        ON submission_dim.user_id = student.student_id
     JOIN sis.semester
         ON student.admit_semester_id = semester_id
 WITH NO SCHEMA BINDING;
