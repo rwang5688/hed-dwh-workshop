@@ -103,49 +103,7 @@ Resources:
               - !Sub 'arn:aws:s3:::${HEDDWDemoS3Bucket}'
               - !Sub 'arn:aws:s3:::${HEDDWDemoS3Bucket}/*'
 
-  HEDDWDemoS3Policy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: HEDDWDemoS3Policy
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          -
-            Effect: Allow
-            Action:
-              - s3:GetObject
-              - s3:PutObject
-              - s3:DeleteObject
-            Resource:
-              - !Sub ${HEDDWDemoS3Bucket.Arn}/*
-          -
-            Effect: Allow
-            Action:
-              - s3:ListBucket
-            Resource:
-              - !GetAtt HEDDWDemoS3Bucket.Arn
-      Roles:
-        - !Ref GlueLabRole
-
-  GlueLabRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          -
-            Effect: Allow
-            Principal:
-              Service:
-                - glue.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: /service-role/
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
-        - arn:aws:iam::aws:policy/AmazonKinesisFullAccess
-
-  LakeFormationWorkflowRole:
+  GlueWorkflowRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -187,207 +145,6 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
         - arn:aws:iam::aws:policy/AWSGlueConsoleFullAccess
 
-  WorkgroupAS3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      AccessControl: Private
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: TRUE
-        BlockPublicPolicy: TRUE
-        IgnorePublicAcls: TRUE
-        RestrictPublicBuckets: TRUE
-      VersioningConfiguration:
-        Status: Suspended
-
-  WorkgroupAS3BucketPolicy:
-    Type: 'AWS::S3::BucketPolicy'
-    Properties:
-      Bucket: !Ref WorkgroupAS3Bucket
-      PolicyDocument:
-        Id: WorkgroupAS3BucketPolicy
-        Version: 2012-10-17
-        Statement:
-          - Sid: AllowOnlySecureTransport
-            Action:
-              - s3:*
-            Condition:
-              Bool:
-                'aws:SecureTransport': 'false'
-            Effect: Deny
-            Principal: '*'
-            Resource:
-              - !Sub 'arn:aws:s3:::${WorkgroupAS3Bucket}'
-              - !Sub 'arn:aws:s3:::${WorkgroupAS3Bucket}/*'
-
-  WorkgroupBS3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      AccessControl: Private
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: TRUE
-        BlockPublicPolicy: TRUE
-        IgnorePublicAcls: TRUE
-        RestrictPublicBuckets: TRUE
-      VersioningConfiguration:
-        Status: Suspended
-
-  WorkgroupBS3BucketPolicy:
-    Type: 'AWS::S3::BucketPolicy'
-    Properties:
-      Bucket: !Ref WorkgroupBS3Bucket
-      PolicyDocument:
-        Id: WorkgroupBS3BucketPolicy
-        Version: 2012-10-17
-        Statement:
-          - Sid: AllowOnlySecureTransport
-            Action:
-              - s3:*
-            Condition:
-              Bool:
-                'aws:SecureTransport': 'false'
-            Effect: Deny
-            Principal: '*'
-            Resource:
-              - !Sub 'arn:aws:s3:::${WorkgroupBS3Bucket}'
-              - !Sub 'arn:aws:s3:::${WorkgroupBS3Bucket}/*'
-
-  BusinessAnalystUserPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      Description: Policy for providing required access to the business analyst user
-      Path: /
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          -
-            Effect: Allow
-            Action: athena:ListWorkGroups
-            Resource: "*"
-          -
-            Effect: Allow
-            Action:
-              - s3:ListBucketMultipartUploads
-              - athena:StartQueryExecution
-              - athena:GetQueryResultsStream
-              - athena:GetQueryResults
-              - s3:CreateBucket
-              - s3:ListBucket
-              - athena:DeleteNamedQuery
-              - athena:GetNamedQuery
-              - athena:ListTagsForResource
-              - athena:ListQueryExecutions
-              - s3:ListMultipartUploadParts
-              - athena:ListNamedQueries
-              - s3:PutObject
-              - s3:GetObject
-              - s3:GetObjectAcl
-              - athena:GetWorkGroup
-              - athena:CreateNamedQuery
-              - s3:AbortMultipartUpload
-              - athena:StopQueryExecution
-              - athena:GetQueryExecution
-              - athena:BatchGetNamedQuery
-              - s3:GetBucketLocation
-              - athena:BatchGetQueryExecution
-            Resource:
-              - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}/*
-              - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}
-              - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}
-              - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}/*
-              - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupA
-          -
-            Effect: Allow
-            Action: athena:GetQueryExecutions
-            Resource: !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupA
-          -
-            Effect: Allow
-            Action:
-              - glue:Get*
-              - glue:GetTable
-            Resource:
-              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
-              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog/awsdatacatalog
-              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/ticketdata
-              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/ticketdata/parquet_sporting_event
-              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/ticketdata/parquet_sport_team
-              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/ticketdata/parquet_sport_location
-              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/ticketdata/sporting_event_info
-
-  WorkgroupManagerUserPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      Description: Policy for providing only manager access to workgroup manager user for WorkgroupA and WorkgroupB
-      Path: /
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          -
-            Effect: Allow
-            Action:
-              - athena:ListWorkGroups
-            Resource: "*"
-          -
-            Effect: Allow
-            Action:
-              - s3:ListBucketMultipartUploads
-              - s3:CreateBucket
-              - s3:ListBucket
-              - s3:ListMultipartUploadParts
-              - s3:PutObject
-              - s3:GetObject
-              - s3:GetObjectAcl
-              - s3:GetBucketLocation
-            Resource:
-              - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}
-              - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}/*
-              - !Sub arn:aws:s3:::${WorkgroupBS3Bucket}
-              - !Sub arn:aws:s3:::${WorkgroupBS3Bucket}/*
-              - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}
-              - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}/*
-              - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupA
-              - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupB
-          -
-            Effect: Allow
-            Action:
-              - athena:DeleteWorkGroup
-              - athena:UpdateWorkGroup
-              - athena:GetWorkGroup
-              - athena:CreateWorkGroup
-              - athena:GetExecutionEngine
-              - athena:GetExecutionEngines
-              - athena:GetNamespace
-              - athena:GetCatalogs
-              - athena:GetNamespaces
-              - athena:GetTables
-              - athena:GetTable
-            Resource:
-              - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupA
-              - !Sub arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/workgroupB
-
-  BusinessAnalystUser:
-    Type: AWS::IAM::User
-    Properties:
-      ManagedPolicyArns:
-        - !Ref BusinessAnalystUserPolicy
-      LoginProfile:
-        Password: Admin123!
-
-  WorkgroupManagerUser:
-    Type: AWS::IAM::User
-    Properties:
-      ManagedPolicyArns:
-        - !Ref WorkgroupManagerUserPolicy
-      LoginProfile:
-        Password: Admin123!
-
   LambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -413,14 +170,10 @@ Resources:
                 Action: s3:DeleteObject
                 Resource:
                   - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}/*
-                  - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}/*
-                  - !Sub arn:aws:s3:::${WorkgroupBS3Bucket}/*
               - Effect: Allow
                 Action: s3:ListBucket
                 Resource:
                   - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}
-                  - !Sub arn:aws:s3:::${WorkgroupAS3Bucket}
-                  - !Sub arn:aws:s3:::${WorkgroupBS3Bucket}
               - Effect: Allow
                 Action: logs:CreateLogGroup
                 Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
@@ -469,18 +222,6 @@ Resources:
     Properties:
       ServiceToken: !GetAtt S3BucketHandler.Arn
       Bucket: !Ref HEDDWDemoS3Bucket
-
-  EmptyWorkgroupAS3Bucket:
-    Type: "Custom::EmptyS3Bucket"
-    Properties:
-      ServiceToken: !GetAtt S3BucketHandler.Arn
-      Bucket: !Ref WorkgroupAS3Bucket
-
-  EmptyWorkgroupBS3Bucket:
-    Type: "Custom::EmptyS3Bucket"
-    Properties:
-      ServiceToken: !GetAtt S3BucketHandler.Arn
-      Bucket: !Ref WorkgroupBS3Bucket
 
   SisDemoDataHandler:
     Type: AWS::Lambda::Function
@@ -884,54 +625,34 @@ Resources:
         Ref: PublicRouteTable
         
 Outputs:
-  GlueLabRole:
-    Description: The Glue service role
-    Value: !Ref GlueLabRole
-
-  LakeFormationRole:
-    Description: Lake Formation IAM role
-    Value: !Ref LakeFormationWorkflowRole
-
   HEDDWDemoS3Bucket:
     Description: S3 Bucket that was created
     Value: !Ref HEDDWDemoS3Bucket
 
-  WorkgroupAS3Bucket:
-    Description: S3 Bucket for storing workgroup A results
-    Value: !Ref WorkgroupAS3Bucket
+  GlueWorkflowRole:
+    Description: Glue Workflow service role
+    Value: !Ref GlueWorkflowRole
 
-  WorkgroupBS3Bucket:
-    Description: S3 bucket for storing workgroup B results
-    Value: !Ref WorkgroupBS3Bucket
-
-  BusinessAnalystUser:
-    Description: business_analyst_user for Workgroup A
-    Value: !Ref BusinessAnalystUser
-
-  WorkgroupManagerUser:
-    Description: workgroup_manager_user for access to Workgroup A and Workgroup B
-    Value: !Ref WorkgroupManagerUser
-
-  ClusterEndpoint:
-    Description: Cluster endpoint
+  RedshiftClusterEndpoint:
+    Description: Redshift cluster endpoint
     Value: !Sub "${RedshiftCluster.Endpoint.Address}:${RedshiftCluster.Endpoint.Port}"
 
-  ClusterName:
-    Description: Name of cluster
+  RedshiftClusterName:
+    Description: Redshift cluster name
     Value:
       Ref: RedshiftCluster
 
-  ParameterGroupName:
-    Description: Name of parameter group
+  RedshiftClusterParameterGroupName:
+    Description: Redshift cluster parameter group name
     Value:
       Ref: RedshiftClusterParameterGroup
 
   RedshiftClusterSubnetGroupName:
-    Description: Name of cluster subnet group
+    Description: Redshift cluster subnet group name
     Value:
       Ref: RedshiftClusterSubnetGroup
 
   RedshiftClusterSecurityGroupName:
-    Description: Name of cluster security group
+    Description: Redshift cluster security group name
     Value:
       Ref: SecurityGroup
