@@ -1,14 +1,13 @@
 /*
 ============================================================================================
-Starting from an empty Redshift database, the following steps setup the base SIS data.
-These steps have already been done for dwh in the demo environment, but I'm including them
-here for completenss.
+Starting from an empty Redshift database (dev), the following steps setup the base SIS data.
 ============================================================================================
 */
 
 /*
--- Ensure that the right Database (dwh) is selected as context (above)
--- Run the following steps to create the base SIS data directly stored in Redshift
+--Step 1 - Create external schema to connect to the SIS data in the data lake
+-- Ensure that the right Database (dev) is selected as context (above).
+-- There should be 12 tables in the external schema.  See list below.
 */
 CREATE EXTERNAL SCHEMA sisraw 
 FROM
@@ -16,6 +15,9 @@ FROM
     database 'db_raw_sisdemo' region '${AWS::Region}'
     iam_role '${RedshiftSpectrumRoleArn}';
 
+/*
+-- Run the following steps to create the base SIS data directly stored in Redshift.
+*/
 CREATE SCHEMA sis;
 CREATE TABLE sis.course AS SELECT * FROM sisraw.course;
 CREATE TABLE sis.course_outcome AS SELECT * FROM sisraw.course_outcome;
@@ -30,7 +32,11 @@ CREATE TABLE sis.semester AS SELECT * FROM sisraw.semester;
 CREATE TABLE sis.student AS SELECT * FROM sisraw.student;
 CREATE TABLE sis.university AS SELECT * FROM sisraw.university;
 
+/*
+-- DROP sisraw schema
+*/
 DROP SCHEMA sisraw;
+
 /*
 ============================================================================================
 ============================================================================================
@@ -38,16 +44,16 @@ DROP SCHEMA sisraw;
 
 /*
 ============================================================================================
-The following steps are what I demonstrate in the video and planned to do for the actual 
-event.  These steps have ALREADY BEEN DONE in the dwhqs database.  So that one is ready to
-use with QuickSight if you run short of time and want to just walk through rather than
-building the configuration during the demo.
+The following steps are what we demonstrate in the video and plan to do for the event. 
+If concerned about running short on time, please perform the steps ahead of the event.
+You can then just walk through rather than building the configuration during the demo.
 ============================================================================================
 */
+
 /*
---Step 1 - Create external schema to connect to the data lake
--- Three tables (assignment_fact, submission_fact and requests)
--- should be available in the external schema.
+--Step 1 - Create external schema to connect to the LMS data in the data lake
+-- There should be 10 tables in the external schema, including the following:
+-- assignment_dim, assignment_fact, submission_dim, submission_fact and requests.
 */
 CREATE EXTERNAL SCHEMA lmsraw
 FROM
@@ -159,6 +165,7 @@ SELECT COUNT(*) from sis_lms.request_info_view;
 The following steps are for returning the dwh database to its pre-demo state
 ============================================================================================
 */
+
 /*
 -- DROP sis_lms schema
 */
