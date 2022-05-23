@@ -5,7 +5,7 @@ Starting from an empty Redshift database (dev), the following steps setup the ba
 */
 
 /*
---Step 1 - Create external schema to connect to the SIS data in the data lake
+--Prerequisites - Create external schema to connect to the SIS data in the data lake
 -- Ensure that the right Database (dev) is selected as context (above).
 -- There should be 12 tables in the external schema.  See list below.
 */
