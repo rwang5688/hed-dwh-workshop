@@ -67,7 +67,7 @@ Conditions:
     - multi-node
 
 Resources:
-  HEDDWDemoS3Bucket:
+  HedDwhS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: Private
@@ -83,12 +83,12 @@ Resources:
       VersioningConfiguration:
         Status: Suspended
 
-  HEDDWDemoS3BucketPolicy:
+  HedDwhS3BucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
     Properties:
-      Bucket: !Ref HEDDWDemoS3Bucket
+      Bucket: !Ref HedDwhS3Bucket
       PolicyDocument:
-        Id: HEDDWDemoS3BucketPolicy
+        Id: HedDwhS3BucketPolicy
         Version: 2012-10-17
         Statement:
           - Sid: AllowOnlySecureTransport
@@ -100,8 +100,8 @@ Resources:
             Effect: Deny
             Principal: '*'
             Resource:
-              - !Sub 'arn:aws:s3:::${HEDDWDemoS3Bucket}'
-              - !Sub 'arn:aws:s3:::${HEDDWDemoS3Bucket}/*'
+              - !Sub 'arn:aws:s3:::${HedDwhS3Bucket}'
+              - !Sub 'arn:aws:s3:::${HedDwhS3Bucket}/*'
 
   GlueWorkflowRole:
     Type: AWS::IAM::Role
@@ -169,11 +169,11 @@ Resources:
               - Effect: Allow
                 Action: s3:DeleteObject
                 Resource:
-                  - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}/*
+                  - !Sub arn:aws:s3:::${HedDwhS3Bucket}/*
               - Effect: Allow
                 Action: s3:ListBucket
                 Resource:
-                  - !Sub arn:aws:s3:::${HEDDWDemoS3Bucket}
+                  - !Sub arn:aws:s3:::${HedDwhS3Bucket}
               - Effect: Allow
                 Action: logs:CreateLogGroup
                 Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
@@ -217,11 +217,11 @@ Resources:
       Runtime: python3.8
       Timeout: 300
 
-  EmptyHEDDWDemoS3Bucket:
+  EmptyHedDwhS3Bucket:
     Type: "Custom::EmptyS3Bucket"
     Properties:
       ServiceToken: !GetAtt S3BucketHandler.Arn
-      Bucket: !Ref HEDDWDemoS3Bucket
+      Bucket: !Ref HedDwhS3Bucket
 
   SisDemoDataHandler:
     Type: AWS::Lambda::Function
@@ -268,7 +268,7 @@ Resources:
           
       Environment: 
         Variables:
-          BUCKET: !Ref HEDDWDemoS3Bucket
+          BUCKET: !Ref HedDwhS3Bucket
       Runtime: nodejs14.x
       Timeout: 300
 
@@ -285,7 +285,7 @@ Resources:
               .s3.amazonaws.com/modules/cfdd4f678e99415a9c1f11342a3a9887/v1/mockdata/lms_demo","version":
               "v1", "current_date": "2020-08-17", "perform_initial_load":
               "1","target_bucket":"
-            - Ref: HEDDWDemoS3Bucket
+            - Ref: HedDwhS3Bucket
             - '", "base_s3_prefix":"lmsapi"}'
       Description: SSM Parameter for mock LMS integration.
       Name: /dataedu/lms-demo/state
@@ -311,7 +311,7 @@ Resources:
             Effect: Allow
             Resource:
               'Fn::GetAtt':
-                - HEDDWDemoS3Bucket
+                - HedDwhS3Bucket
                 - Arn
           - Action:
               - 's3:GetObject'
@@ -322,7 +322,7 @@ Resources:
               'Fn::Join':
                 - ''
                 - - 'Fn::GetAtt':
-                      - HEDDWDemoS3Bucket
+                      - HedDwhS3Bucket
                       - Arn
                   - /*
           - Action:
@@ -625,13 +625,19 @@ Resources:
         Ref: PublicRouteTable
         
 Outputs:
-  HEDDWDemoS3Bucket:
+  HedDwhS3Bucket:
     Description: S3 Bucket that was created
-    Value: !Ref HEDDWDemoS3Bucket
+    Value: !Ref HedDwhS3Bucket
 
-  GlueWorkflowRole:
-    Description: Glue Workflow service role
-    Value: !Ref GlueWorkflowRole
+  GlueWorkflowRoleArn:
+    Description: Glue Workflow service role ARN
+    Value: 
+      Fn::GetAtt: GlueWorkflowRole.Arn
+
+  RedshiftSpectrumRoleArn:
+    Description: Redshift Spectrum role ARN
+    Value:
+      Fn::GetAtt: RedshiftSpectrumRole.Arn
 
   RedshiftClusterEndpoint:
     Description: Redshift cluster endpoint
