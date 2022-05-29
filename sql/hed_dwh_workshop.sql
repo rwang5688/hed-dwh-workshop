@@ -1,12 +1,12 @@
 /*
 ============================================================================================
-Starting from an empty Redshift database (dev), the following steps setup the base SIS data.
+Starting from an empty Redshift database (dwh), the following steps setup the base SIS data.
 ============================================================================================
 */
 
 /*
 --Prerequisites - Create external schema to connect to the SIS data in the data lake
--- Ensure that the right Database (dev) is selected as context (above).
+-- Ensure that the correct database (dwh) is selected as context (above).
 -- There should be 12 tables in the external schema.  See list below.
 */
 CREATE EXTERNAL SCHEMA sisraw 
