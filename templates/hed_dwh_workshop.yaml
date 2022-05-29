@@ -5,7 +5,7 @@ Parameters:
     Description: The name of the first database to be created when the cluster is
       created
     Type: String
-    Default: dev
+    Default: dwh
     AllowedPattern: "([a-z]|[0-9])+"
 
   ClusterType:
