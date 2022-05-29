@@ -1,1 +1,1 @@
-# hed-dw-demo
+# hed-dwh-workshop
