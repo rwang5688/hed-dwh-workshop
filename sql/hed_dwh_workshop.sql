@@ -1,7 +1,7 @@
 /*
-============================================================================================
-Starting from an empty Redshift database (dwh), the following steps setup the base SIS data.
-============================================================================================
+===============================================================================================
+Starting from an empty Redshift database (dwh), the following steps setup the external schemas.
+===============================================================================================
 */
 
 /*
@@ -16,26 +16,15 @@ FROM
     iam_role '${RedshiftSpectrumRoleArn}';
 
 /*
--- Run the following steps to create the base SIS data directly stored in Redshift.
+--Prerequisites - Create external schema to connect to the LMS data in the data lake
+-- There should be 10 tables in the external schema, including the following:
+-- assignment_dim, assignment_fact, submission_dim, submission_fact and requests.
 */
-CREATE SCHEMA sis;
-CREATE TABLE sis.course AS SELECT * FROM sisraw.course;
-CREATE TABLE sis.course_outcome AS SELECT * FROM sisraw.course_outcome;
-CREATE TABLE sis.course_registration  AS SELECT * FROM sisraw.course_registration;
-CREATE TABLE sis.course_schedule AS SELECT * FROM sisraw.course_schedule;
-CREATE TABLE sis.degree_plan AS SELECT * FROM sisraw.degree_plan;
-CREATE TABLE sis.department AS SELECT * FROM sisraw.department;
-CREATE TABLE sis.ed_level AS SELECT * FROM sisraw.ed_level;
-CREATE TABLE sis.faculty AS SELECT * FROM sisraw.faculty;
-CREATE TABLE sis.school AS SELECT * FROM sisraw.school;
-CREATE TABLE sis.semester AS SELECT * FROM sisraw.semester;
-CREATE TABLE sis.student AS SELECT * FROM sisraw.student;
-CREATE TABLE sis.university AS SELECT * FROM sisraw.university;
-
-/*
--- DROP sisraw schema
-*/
-DROP SCHEMA sisraw;
+CREATE EXTERNAL SCHEMA lmsraw
+FROM
+    data catalog
+    database 'db_raw_lmsdemo' region '${AWS::Region}'
+    iam_role '${RedshiftSpectrumRoleArn}';
 
 /*
 ============================================================================================
@@ -51,15 +40,21 @@ You can then just walk through rather than building the configuration during the
 */
 
 /*
---Step 1 - Create external schema to connect to the LMS data in the data lake
--- There should be 10 tables in the external schema, including the following:
--- assignment_dim, assignment_fact, submission_dim, submission_fact and requests.
+--Step 1 - Run the following steps to load the SIS datasets directly into Redshift.
 */
-CREATE EXTERNAL SCHEMA lmsraw
-FROM
-    data catalog
-    database 'db_raw_lmsdemo' region '${AWS::Region}'
-    iam_role '${RedshiftSpectrumRoleArn}';
+CREATE SCHEMA sis;
+CREATE TABLE sis.course AS SELECT * FROM sisraw.course;
+CREATE TABLE sis.course_outcome AS SELECT * FROM sisraw.course_outcome;
+CREATE TABLE sis.course_registration  AS SELECT * FROM sisraw.course_registration;
+CREATE TABLE sis.course_schedule AS SELECT * FROM sisraw.course_schedule;
+CREATE TABLE sis.degree_plan AS SELECT * FROM sisraw.degree_plan;
+CREATE TABLE sis.department AS SELECT * FROM sisraw.department;
+CREATE TABLE sis.ed_level AS SELECT * FROM sisraw.ed_level;
+CREATE TABLE sis.faculty AS SELECT * FROM sisraw.faculty;
+CREATE TABLE sis.school AS SELECT * FROM sisraw.school;
+CREATE TABLE sis.semester AS SELECT * FROM sisraw.semester;
+CREATE TABLE sis.student AS SELECT * FROM sisraw.student;
+CREATE TABLE sis.university AS SELECT * FROM sisraw.university;
 
 /*
 --Step 2 - Select some data from the local data warehouse tables
@@ -175,3 +170,8 @@ DROP SCHEMA sis_lms CASCADE;
 -- DROP lmsraw schema
 */
 DROP SCHEMA lmsraw CASCADE;
+
+/*
+-- DROP sisraw schema
+*/
+DROP SCHEMA sisraw;
