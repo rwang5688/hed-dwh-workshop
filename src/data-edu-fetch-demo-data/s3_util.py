@@ -49,6 +49,11 @@ def copy_s3_objects(profile_name, region_name, \
 
     try:
         for source_object_name in source_object_names:
+            # skip over any SQL script
+            if 'sql' in source_object_name:
+                print('DEBUG: copy_s3_objects: skipping source_object_name: %s' % (source_object_name))
+                continue
+
             copy_source = {
                 'Bucket': source_bucket_name,
                 'Key': source_object_name
