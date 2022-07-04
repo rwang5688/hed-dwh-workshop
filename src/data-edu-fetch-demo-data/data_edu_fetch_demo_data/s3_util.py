@@ -51,7 +51,7 @@ def copy_s3_objects(profile_name, region_name, \
         for source_object_name in source_object_names:
             # skip over any SQL script
             if 'sql' in source_object_name:
-                print('DEBUG: copy_s3_objects: skipping source_object_name: %s' % (source_object_name))
+                print('copy_s3_objects: skipping source_object_name: %s' % (source_object_name))
                 continue
 
             copy_source = {
@@ -61,7 +61,7 @@ def copy_s3_objects(profile_name, region_name, \
             dest_object_name = source_object_name.replace(source_prefix, dest_prefix)
 
             s3.copy(copy_source, dest_bucket_name, dest_object_name)
-            print('DEBUG: copy_s3_objects: dest_object_name: %s' % (dest_object_name))
+            print('copy_s3_objects: dest_object_name: %s' % (dest_object_name))
 
             dest_object_names.append(dest_object_name)
         
