@@ -10,5 +10,5 @@ export SIS_DEMO_RAW_DATA_PREFIX='sis_demo/'
 export LMS_DEMO_RAW_DATA_PREFIX='lms_demo/'
 
 echo "[CMD] python data_edu_fetch_demo_data.py"
-python data_edu_fetch_demo_data.py
+python data_edu_fetch_demo_data/data_edu_fetch_demo_data.py
 
