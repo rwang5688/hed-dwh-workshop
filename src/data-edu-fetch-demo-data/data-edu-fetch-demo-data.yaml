@@ -145,7 +145,8 @@ Resources:
           'Fn::Join':
             - ''
             - - Ref: SourceModuleVersionPrefix
-              - 'lambda/data-edu-fetch-demo-data.zip'
+              - 'lambda/'
+              - 'data_edu_fetch_demo_data.zip'
       Role:
         'Fn::GetAtt':
           - DataEduFetchDemoDataRole
