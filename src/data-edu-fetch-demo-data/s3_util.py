@@ -22,7 +22,7 @@ def get_s3_object_names(profile_name, region_name, bucket_name, prefix):
 
     try:
         response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
-        print('DEBUG: get_s3_object_names: s3.list_objects_v2() response: %s' % (response))
+        #print('DEBUG: get_s3_object_names: s3.list_objects_v2() response: %s' % (response))
         
         for object in response['Contents']:
             key = object['Key']
