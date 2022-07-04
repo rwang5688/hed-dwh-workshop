@@ -14,7 +14,7 @@ def get_env_vars():
     global sis_demo_raw_data_prefix
     global lms_demo_raw_data_prefix
 
-    profile_name = 'default'
+    profile_name = None # same as --profile default
     region_name = os.environ['AWS_REGION']
 
     source_data_bucket_name_prefix = os.environ['SOURCE_DATA_BUCKET_NAME_PREFIX']

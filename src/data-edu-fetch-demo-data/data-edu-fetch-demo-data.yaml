@@ -21,10 +21,10 @@ Parameters:
     Description: LMS Demo source data prefix
     Type: String
 
-  DataEduRawDataBucket:
-    ConstraintDescription: Data EDU Raw Data Bucket
-    Description: Data EDU Raw Data Bucket
-    Type: AWS::S3::Bucket
+  RawDataBucketName:
+    Default: 'data-edu-raw-6114e92354234c16b7d90ca97ccc8fc6'
+    Description: Raw data bucket name
+    Type: String
 
   SisDemoRawDataPrefix:
     Default: 'sis_demo/'
@@ -42,48 +42,7 @@ Parameters:
     Type: String
 
 Resources:
-  LambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          -
-            Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: /
-      ManagedPolicyArns: 
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
-      Policies:
-        - PolicyName: LambdaRolePolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action: s3:ListBucket
-                Resource:
-                  - !Sub arn:aws:s3:::${DataEduRawDataBucket}
-              - Effect: Allow
-                Action:
-                  - 's3:GetObject'
-                  - 's3:PutObject'
-                  - 's3:DeleteObject'
-                Resource:
-                  - !Sub arn:aws:s3:::${DataEduRawDataBucket}/*
-              - Effect: Allow
-                Action: logs:CreateLogGroup
-                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
-
-  DataEduFetchDemoDataRole:
+  DataEduFetchDemoDataLambdaRole:
     Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
@@ -93,44 +52,42 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
         Version: '2012-10-17'
-      Path: /
+      RoleName: data-edu-fetch-demo-data-lambda-role
       ManagedPolicyArns: 
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
-  DataEduFetchDemoDataRoleDefaultPolicy:
+  DataEduFetchDemoDataLambdaRoleDefaultPolicy:
     Type: 'AWS::IAM::Policy'
     Properties:
       PolicyDocument:
         Statement:
-          - Action: 's3:ListBucket'
+          - Action: 
+              - 's3:ListBucket'
             Effect: Allow
-            Resource:
-              'Fn::GetAtt':
-                - DataEduRawDataBucket
-                - Arn
+            Resource: 
+              - !Sub arn:aws:s3:::${RawDataBucketName}
           - Action:
               - 's3:GetObject'
               - 's3:PutObject'
               - 's3:DeleteObject'
             Effect: Allow
             Resource:
-              'Fn::Join':
-                - ''
-                - - 'Fn::GetAtt':
-                      - DataEduRawDataBucket
-                      - Arn
-                  - /*
-          - Action: logs:CreateLogGroup
-            Effect: Allow
-            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+              - !Sub arn:aws:s3:::${RawDataBucketName}/*
           - Action:
-              - logs:CreateLogStream
-              - logs:PutLogEvents
+              - 'logs:CreateLogGroup'
             Effect: Allow
-            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
+            Resource:
+              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+          - Action:
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Effect: Allow
+            Resource:
+              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
         Version: '2012-10-17'
+      PolicyName: data-edu-fetch-demo-data-lambda-role-default-policy
       Roles:
-        - Ref: DataEduFetchDemoDataRole
+        - Ref: DataEduFetchDemoDataLambdaRole
 
   DataEduFetchDemoDataLambda:
     Type: 'AWS::Lambda::Function'
@@ -149,7 +106,7 @@ Resources:
               - 'data_edu_fetch_demo_data.zip'
       Role:
         'Fn::GetAtt':
-          - DataEduFetchDemoDataRole
+          - DataEduFetchDemoDataLambdaRole
           - Arn
       Description: >-
         Lambda function that fetches demo data from source data bucket and
@@ -162,25 +119,20 @@ Resources:
       Environment:
         Variables:
           SOURCE_DATA_BUCKET_NAME_PREFIX:
-            - Ref: SourceDataBucketNamePrefix
+            Ref: SourceDataBucketNamePrefix
           SOURCE_MODULE_VERSION_PREFIX:
-            - Ref: SourceModuleVersionPrefix
+            Ref: SourceModuleVersionPrefix
           SIS_DEMO_MOCK_DATA_PREFIX:
-            - Ref: SisDemoMockDataPrefix
+            Ref: SisDemoMockDataPrefix
           LMS_DEMO_MOCK_DATA_PREFIX:
-            - Ref: LmsDemoMockDataPrefix
+            Ref: LmsDemoMockDataPrefix
           RAW_DATA_BUCKET_NAME:
-            - Ref: DataEduRawDataBucket
+            Ref: RawDataBucketName
           SIS_DEMO_RAW_DATA_PREFIX:
-            - Ref: SisDemoRawDataPrefix
+            Ref: SisDemoRawDataPrefix
           LMS_DEMO_RAW_DATA_PREFIX:
-            - Ref: LmsDemoRawDataPrefix
+            Ref: LmsDemoRawDataPrefix
     DependsOn:
-      - DataEduFetchDemoDataRoleDefaultPolicy
-      - DataEduFetchDemoDataRole
-
-Outputs:
-  DataEduRawDataBucket:
-    Description: Data EDU raw data bucket that we selected.
-    Value: !Ref DataEduRawDataBucket
+      - DataEduFetchDemoDataLambdaRoleDefaultPolicy
+      - DataEduFetchDemoDataLambdaRole
 
