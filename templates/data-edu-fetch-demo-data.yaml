@@ -22,7 +22,7 @@ Parameters:
     Type: String
 
   RawDataBucketName:
-    Default: 'data-edu-raw-6114e92354234c16b7d90ca97ccc8fc6'
+    Default: 'data-edu-raw-9132e5491bd44c56aaaaefc3e91b6aa8'
     Description: Raw data bucket name
     Type: String
 
@@ -37,7 +37,7 @@ Parameters:
     Type: String
 
   SourceCodeBucketNamePrefix:
-    Default: 'ee-assets-prod-6114e92354234c16b7d90ca97ccc8fc6-'
+    Default: 'ee-assets-prod-9132e5491bd44c56aaaaefc3e91b6aa8-'
     Description: Source data bucket name prefix
     Type: String
 
