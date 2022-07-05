@@ -1,7 +1,7 @@
 #!/bin/bash
-export AWS_REGION='us-east-1'
+export AWS_REGION='us-west-2'
 
-export SOURCE_CODE_BUCKET_NAME_PREFIX='ee-assets-prod-6114e92354234c16b7d90ca97ccc8fc6-'
+export SOURCE_CODE_BUCKET_NAME_PREFIX='ee-assets-prod-9132e5491bd44c56aaaaefc3e91b6aa8-'
 export SOURCE_MODULE_VERSION_PREFIX='modules/cfdd4f678e99415a9c1f11342a3a9887/v1/'
 
 rm -rf ./zip && mkdir zip
